@@ -49,7 +49,7 @@
         display: block;
       }
 
-      /* ── Floating top dock ──────────────────────────────── */
+      /* Floating top dock */
       header {
         position: fixed;
         top: 14px;
@@ -95,7 +95,7 @@
         50% { transform: scale(1.3); opacity: 0.6; }
       }
 
-      /* ── Tabs ───────────────────────────────────────────── */
+      /* Tabs */
       .tabs {
         display: flex;
         align-items: center;
@@ -131,7 +131,7 @@
         box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
       }
 
-      /* ── Action buttons ─────────────────────────────────── */
+      /* Action buttons */
       .actions {
         display: flex;
         align-items: center;
@@ -166,7 +166,7 @@
         fill: currentColor;
       }
 
-      /* ── Bottom info pill ───────────────────────────────── */
+      /* Bottom info pill */
       #info-pill {
         position: fixed;
         bottom: 18px;
@@ -196,7 +196,7 @@
         border-radius: 6px;
       }
 
-      /* ── Key hints ──────────────────────────────────────── */
+      /* Key hints */
       .key-hints {
         position: fixed;
         bottom: 18px;
@@ -219,7 +219,7 @@
         color: #fff;
       }
 
-      /* ── Full-screen loading overlay ────────────────────── */
+      /* Spinner overlay */
       #loader {
         position: fixed;
         inset: 0;
@@ -229,7 +229,8 @@
         align-items: center;
         justify-content: center;
         gap: 16px;
-        background: #090a0f;
+        background: rgba(9, 10, 15, 0.7);
+        backdrop-filter: blur(8px);
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.25s ease;
@@ -255,7 +256,7 @@
         font-size: 13px;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-        color: rgba(255,255,255,0.7);
+        color: rgba(255,255,255,0.85);
         font-family: var(--font-mono);
       }
 
@@ -275,9 +276,7 @@
         <span>SPELLSHADER</span>
       </div>
 
-      <nav class="tabs" id="tab-container">
-        <!-- Buttons injected by JS -->
-      </nav>
+      <nav class="tabs" id="tab-container"></nav>
 
       <div class="actions">
         <button class="icon-btn" id="btn-reload" title="Reload effect">
@@ -296,7 +295,7 @@
 
     <!-- Bottom Info -->
     <div id="info-pill">
-      <span id="info-name"><b>Melt</b> · Day 3</span>
+      <span id="info-name"><b>Melt</b></span>
       <span class="tag" id="info-params">Candy Blob</span>
     </div>
 
@@ -307,7 +306,7 @@
       <kbd>R</kbd> Reload
     </div>
 
-    <!-- Full-screen spinner overlay -->
+    <!-- Spinner overlay -->
     <div id="loader">
       <div class="spinner"></div>
       <span id="loader-text">Loading Shader…</span>
@@ -350,7 +349,7 @@
       ];
 
       let currentIndex = 0;
-      let pollTimer = null;
+      let hideTimeout = null;
 
       const tabContainer = document.getElementById('tab-container');
       const frame        = document.getElementById('shader-frame');
@@ -361,7 +360,7 @@
       const loader       = document.getElementById('loader');
       const loaderText   = document.getElementById('loader-text');
 
-      // Build tab buttons — icon + name only, no badges
+      // Build tabs (icon + name only)
       SHADERS.forEach((s, idx) => {
         const btn = document.createElement('button');
         btn.className = `tab-btn${idx === 0 ? ' active' : ''}`;
@@ -372,81 +371,39 @@
 
       function hideLoader() {
         loader.classList.remove('active');
-        frame.classList.remove('loading');
-      }
-
-      // Poll the iframe's #loading element until it disappears (meaning the WebGL effect is running).
-      // Falls back to force-hiding after a generous timeout.
-      function startReadyPoll(timeoutMs) {
-        if (pollTimer) clearInterval(pollTimer);
-        const deadline = Date.now() + timeoutMs;
-        pollTimer = setInterval(() => {
-          try {
-            const doc = frame.contentDocument;
-            if (!doc) return;
-            const loadingEl = doc.getElementById('loading');
-            // The demo removes or hides #loading once ready()
-            const hidden =
-              !loadingEl ||
-              !loadingEl.isConnected ||
-              loadingEl.classList.contains('done') ||
-              getComputedStyle(loadingEl).display === 'none' ||
-              loadingEl.style.display === 'none';
-            if (hidden) {
-              clearInterval(pollTimer);
-              pollTimer = null;
-              hideLoader();
-            }
-          } catch (e) { /* cross-origin guard, shouldn't happen on localhost */ }
-
-          if (Date.now() > deadline) {
-            clearInterval(pollTimer);
-            pollTimer = null;
-            hideLoader();
-            // Also force-remove the demo's own loading overlay if still present
-            try {
-              const el = frame.contentDocument?.getElementById('loading');
-              if (el) el.style.display = 'none';
-            } catch (e) {}
-          }
-        }, 400);
       }
 
       function loadShader(idx) {
-        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        if (hideTimeout) clearTimeout(hideTimeout);
 
         currentIndex = idx;
         const shader = SHADERS[idx];
 
-        // Update active tab
+        // Update tabs active state
         Array.from(tabContainer.children).forEach((el, i) =>
           el.classList.toggle('active', i === idx)
         );
 
-        // Show our overlay spinner
-        loaderText.textContent = `Loading ${shader.name}…`;
-        loader.classList.add('active');
-        frame.classList.add('loading');
-
-        // Update metadata
+        // Update bottom pill
         btnOpenTab.href = shader.path;
         infoName.innerHTML = `<b>${shader.name}</b>`;
         infoParams.textContent = shader.specs;
 
-        // Set iframe source; onload fires when HTML + scripts are parsed (not when WebGL is ready).
-        // We start polling the demo's own #loading element to know when it's truly done.
+        // Show brief non-blocking spinner
+        loaderText.textContent = `Loading ${shader.name}…`;
+        loader.classList.add('active');
+
+        // Always hide loader quickly on load or 600ms fallback
         frame.onload = () => {
-          // Give the demo's JS a brief moment to start before we begin polling.
-          // Melt is heavy (32-sample motion blur + GI), allow up to 45 s.
-          setTimeout(() => startReadyPoll(45000), 500);
+          hideTimeout = setTimeout(hideLoader, 300);
         };
+        hideTimeout = setTimeout(hideLoader, 1200);
 
         frame.src = shader.path;
       }
 
       btnReload.onclick = () => loadShader(currentIndex);
 
-      // Keys 1-4 switch shaders; R reloads current
       window.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         const num = parseInt(e.key, 10);
@@ -454,7 +411,7 @@
         if (e.key === 'r' || e.key === 'R') loadShader(currentIndex);
       });
 
-      // Load first shader on startup
+      // Start initial shader
       loadShader(0);
     </script>
   </body>

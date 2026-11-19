@@ -36,7 +36,11 @@ export function encodeAsset(header, arrays) {
 }
 
 export function decodeAsset(buffer) {
+  if (buffer.byteLength < 4) throw new Error("decodeAsset: buffer too small");
   const len = new DataView(buffer).getUint32(0, true);
+  if (len > buffer.byteLength - 4) {
+    throw new Error(`decodeAsset: invalid asset header (len=${len}, byteLength=${buffer.byteLength})`);
+  }
   const header = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 4, len)));
   const arrays = {};
   for (const [key, { offset, count, type }] of Object.entries(header.buffers)) {
