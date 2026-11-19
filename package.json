@@ -1,15 +1,16 @@
 {
-  "name": "monsterredesign",
-  "version": "0.0.0",
+  "name": "spellshader",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve": "node server.js"
   },
   "devDependencies": {
-    "vite": "^8.3.4"
+    "vite": "^6.2.7"
   },
   "dependencies": {
     "lil-gui": "^0.21.0",

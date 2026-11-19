@@ -1,14 +1,461 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./src/style.css">
-    <title>monsterredesign</title>
+    <meta charset="utf-8" />
+    <title>SpellShader · Shader Showcase</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #090a0f;
+        --card-bg: rgba(18, 20, 29, 0.75);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --accent: #ff4766;
+        --accent-glow: rgba(255, 71, 102, 0.35);
+        --text: #f0f2f8;
+        --text-muted: #8b92a5;
+        --font-main: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        font-family: var(--font-main);
+        color: var(--text);
+        user-select: none;
+      }
+
+      /* Full-screen iframe viewport */
+      #viewport-container {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        background: var(--bg);
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+      }
+
+      /* ── Floating top dock ──────────────────────────────── */
+      header {
+        position: fixed;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 999px;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 1px 1px rgba(255,255,255,0.05);
+        max-width: calc(100vw - 28px);
+      }
+
+      .logo-tag {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 14px 6px 10px;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: #fff;
+        border-right: 1px solid rgba(255,255,255,0.1);
+      }
+
+      .logo-tag .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 10px var(--accent);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.3); opacity: 0.6; }
+      }
+
+      /* ── Tabs ───────────────────────────────────────────── */
+      .tabs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .tab-btn {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-family: var(--font-main);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        white-space: nowrap;
+      }
+
+      .tab-btn:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.08);
+      }
+
+      .tab-btn.active {
+        color: #fff;
+        background: rgba(255,255,255,0.14);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      }
+
+      /* ── Action buttons ─────────────────────────────────── */
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding-left: 6px;
+        border-left: 1px solid rgba(255,255,255,0.1);
+      }
+
+      .icon-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+      }
+
+      .icon-btn:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.1);
+      }
+
+      .icon-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      /* ── Bottom info pill ───────────────────────────────── */
+      #info-pill {
+        position: fixed;
+        bottom: 18px;
+        left: 20px;
+        z-index: 99;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: rgba(12,14,20,0.75);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--card-border);
+        font-size: 12px;
+        color: var(--text-muted);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      }
+
+      #info-pill b { color: #fff; }
+
+      #info-pill .tag {
+        font-family: var(--font-mono);
+        color: #a7b0c9;
+        background: rgba(255,255,255,0.06);
+        padding: 2px 7px;
+        border-radius: 6px;
+      }
+
+      /* ── Key hints ──────────────────────────────────────── */
+      .key-hints {
+        position: fixed;
+        bottom: 18px;
+        right: 20px;
+        z-index: 99;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: rgba(255,255,255,0.4);
+        font-family: var(--font-mono);
+      }
+
+      kbd {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 4px;
+        padding: 2px 5px;
+        font-size: 10px;
+        color: #fff;
+      }
+
+      /* ── Full-screen loading overlay ────────────────────── */
+      #loader {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: #090a0f;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+      }
+
+      #loader.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      #loader span {
+        font-size: 13px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.7);
+        font-family: var(--font-mono);
+      }
+
+      @media (max-width: 768px) {
+        .logo-tag { display: none; }
+        .tab-btn { padding: 6px 10px; font-size: 12px; }
+        #info-pill, .key-hints { display: none; }
+      }
+    </style>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
-    <script type="module" src="/src/main.js"></script>
+
+    <!-- Top Floating Switcher Dock -->
+    <header>
+      <div class="logo-tag">
+        <span class="dot"></span>
+        <span>SPELLSHADER</span>
+      </div>
+
+      <nav class="tabs" id="tab-container">
+        <!-- Buttons injected by JS -->
+      </nav>
+
+      <div class="actions">
+        <button class="icon-btn" id="btn-reload" title="Reload effect">
+          <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+        <a class="icon-btn" id="btn-open-tab" href="#" target="_blank" title="Open standalone in new tab">
+          <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Shader Viewport -->
+    <div id="viewport-container">
+      <iframe id="shader-frame" src="" allow="accelerometer; camera; encrypted-media; gyroscope; microphone; autoplay"></iframe>
+    </div>
+
+    <!-- Bottom Info -->
+    <div id="info-pill">
+      <span id="info-name"><b>Melt</b> · Day 3</span>
+      <span class="tag" id="info-params">Candy Blob</span>
+    </div>
+
+    <div class="key-hints">
+      <span>Keys:</span>
+      <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> Switch
+      <span style="margin-left:6px">·</span>
+      <kbd>R</kbd> Reload
+    </div>
+
+    <!-- Full-screen spinner overlay -->
+    <div id="loader">
+      <div class="spinner"></div>
+      <span id="loader-text">Loading Shader…</span>
+    </div>
+
+    <script>
+      const SHADERS = [
+        {
+          id: 'melt',
+          name: 'Melt',
+          icon: '💧',
+          path: '3/?seed=1g2g9j5&motion=Tumble&finish=Candy&shape=Blob',
+          specs: 'Candy Blob · Viscous flow, drips, puddles',
+          themeColor: '#d8d5cf'
+        },
+        {
+          id: 'feathers',
+          name: 'Feathers',
+          icon: '🪶',
+          path: '12/?look=dark&seed=1q6iv5h&shape=torus',
+          specs: 'Dark Torus · Plumage, keratin scattering, barbs',
+          themeColor: '#0e0d0c'
+        },
+        {
+          id: 'burst',
+          name: 'Burst',
+          icon: '💥',
+          path: '2/?seed=1v9sgrx&shape=suzanne',
+          specs: 'Suzanne · Shattered shell, chunks, spray',
+          themeColor: '#ffffff'
+        },
+        {
+          id: 'jelly',
+          name: 'Jelly',
+          icon: '🍬',
+          path: '9/?light=rose&shape=cross',
+          specs: 'Rose Cross · Soft body jelly, glass container',
+          themeColor: '#cdc8c3'
+        }
+      ];
+
+      let currentIndex = 0;
+      let pollTimer = null;
+
+      const tabContainer = document.getElementById('tab-container');
+      const frame        = document.getElementById('shader-frame');
+      const infoName     = document.getElementById('info-name');
+      const infoParams   = document.getElementById('info-params');
+      const btnOpenTab   = document.getElementById('btn-open-tab');
+      const btnReload    = document.getElementById('btn-reload');
+      const loader       = document.getElementById('loader');
+      const loaderText   = document.getElementById('loader-text');
+
+      // Build tab buttons — icon + name only, no badges
+      SHADERS.forEach((s, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn${idx === 0 ? ' active' : ''}`;
+        btn.innerHTML = `<span>${s.icon}</span><span>${s.name}</span>`;
+        btn.onclick = () => loadShader(idx);
+        tabContainer.appendChild(btn);
+      });
+
+      function hideLoader() {
+        loader.classList.remove('active');
+        frame.classList.remove('loading');
+      }
+
+      // Poll the iframe's #loading element until it disappears (meaning the WebGL effect is running).
+      // Falls back to force-hiding after a generous timeout.
+      function startReadyPoll(timeoutMs) {
+        if (pollTimer) clearInterval(pollTimer);
+        const deadline = Date.now() + timeoutMs;
+        pollTimer = setInterval(() => {
+          try {
+            const doc = frame.contentDocument;
+            if (!doc) return;
+            const loadingEl = doc.getElementById('loading');
+            // The demo removes or hides #loading once ready()
+            const hidden =
+              !loadingEl ||
+              !loadingEl.isConnected ||
+              loadingEl.classList.contains('done') ||
+              getComputedStyle(loadingEl).display === 'none' ||
+              loadingEl.style.display === 'none';
+            if (hidden) {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              hideLoader();
+            }
+          } catch (e) { /* cross-origin guard, shouldn't happen on localhost */ }
+
+          if (Date.now() > deadline) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            hideLoader();
+            // Also force-remove the demo's own loading overlay if still present
+            try {
+              const el = frame.contentDocument?.getElementById('loading');
+              if (el) el.style.display = 'none';
+            } catch (e) {}
+          }
+        }, 400);
+      }
+
+      function loadShader(idx) {
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+        currentIndex = idx;
+        const shader = SHADERS[idx];
+
+        // Update active tab
+        Array.from(tabContainer.children).forEach((el, i) =>
+          el.classList.toggle('active', i === idx)
+        );
+
+        // Show our overlay spinner
+        loaderText.textContent = `Loading ${shader.name}…`;
+        loader.classList.add('active');
+        frame.classList.add('loading');
+
+        // Update metadata
+        btnOpenTab.href = shader.path;
+        infoName.innerHTML = `<b>${shader.name}</b>`;
+        infoParams.textContent = shader.specs;
+
+        // Set iframe source; onload fires when HTML + scripts are parsed (not when WebGL is ready).
+        // We start polling the demo's own #loading element to know when it's truly done.
+        frame.onload = () => {
+          // Give the demo's JS a brief moment to start before we begin polling.
+          // Melt is heavy (32-sample motion blur + GI), allow up to 45 s.
+          setTimeout(() => startReadyPoll(45000), 500);
+        };
+
+        frame.src = shader.path;
+      }
+
+      btnReload.onclick = () => loadShader(currentIndex);
+
+      // Keys 1-4 switch shaders; R reloads current
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 4) loadShader(num - 1);
+        if (e.key === 'r' || e.key === 'R') loadShader(currentIndex);
+      });
+
+      // Load first shader on startup
+      loadShader(0);
+    </script>
   </body>
 </html>

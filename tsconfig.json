@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "common": ["modules/common.js"],
+      "maf": ["modules/maf.js"],
+      "guspira": ["third_party/guspira.js"],
+      "easings": ["modules/easings.js"],
+      "three": ["third_party/three.module.js"],
+      "three/*": ["third_party/*"],
+      "third_party/*": ["third_party/*"],
+      "shaders/*": ["shaders/*"],
+      "modules/*": ["modules/*"]
+    }
+  },
+  "include": [
+    "**/*.js",
+    "**/*.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "orig"
+  ]
+}

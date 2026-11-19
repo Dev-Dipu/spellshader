@@ -1,0 +1,9 @@
+{
+  "name": "third_party",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./*": "./*",
+    ".": "./three.module.js"
+  }
+}
